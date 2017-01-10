@@ -117,7 +117,8 @@ func (e *msgpackEncDriver) EncodeNil() {
 
 func (e *msgpackEncDriver) EncodeInt(i int64) {
 	if i >= 0 {
-		e.EncodeUint(uint64(i))
+		// e.EncodeUint(uint64(i)) // shamoto changed.
+		e.EncodeIntUpper(i)
 	} else if i >= -32 {
 		e.w.writen1(byte(i))
 	} else if i >= math.MinInt8 {
@@ -126,6 +127,22 @@ func (e *msgpackEncDriver) EncodeInt(i int64) {
 		e.w.writen1(mpInt16)
 		bigenHelper{e.x[:2], e.w}.writeUint16(uint16(i))
 	} else if i >= math.MinInt32 {
+		e.w.writen1(mpInt32)
+		bigenHelper{e.x[:4], e.w}.writeUint32(uint32(i))
+	} else {
+		e.w.writen1(mpInt64)
+		bigenHelper{e.x[:8], e.w}.writeUint64(uint64(i))
+	}
+}
+
+// IntをUintで返したくないので、追加
+func (e *msgpackEncDriver) EncodeIntUpper(i int64) {
+	if i <= math.MaxInt8 {
+		e.w.writen2(mpInt8, byte(i))
+	} else if i <= math.MaxInt16 {
+		e.w.writen1(mpInt16)
+		bigenHelper{e.x[:2], e.w}.writeUint16(uint16(i))
+	} else if i <= math.MaxInt32 {
 		e.w.writen1(mpInt32)
 		bigenHelper{e.x[:4], e.w}.writeUint32(uint32(i))
 	} else {
